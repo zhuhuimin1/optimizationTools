@@ -4,45 +4,79 @@ import java.nio.channels.FileChannel;
 public class Main {
 
     //存放重新分类后的素材文件夹
-    private static String resultFileName = "分类好的素材";
+    private static String resultRootFolder = "分类好的素材";
+    private static String realPicture = "实景图";
 
     public static void main(String[] args) {
         //新建存放结果的文件夹
-        File resultFile = new File(resultFileName);
+        File resultFile = new File(resultRootFolder);
         if (!resultFile.exists())
             resultFile.mkdir();
 
-        //读取素材文件夹
-        File pictureFile = new File("./files");
-        File[] pictureList = pictureFile.listFiles();
+        //读取品牌商文件夹
+        File brandFile = new File("./files");
+        File[] brandList = brandFile.listFiles();
 
-        for (int i = 0; i < pictureList.length; i++) {
-            File sizeFile = new File(pictureList[i].getAbsolutePath());
-            File[] sizeList = sizeFile.listFiles();
+        for (int i = 0; i < brandList.length; i++) {
+            File sizeFolder = new File(brandList[i].getAbsolutePath());
+            File[] sizeList = sizeFolder.listFiles();
             //读取尺寸文件夹
             for (int j = 0; j < sizeList.length; j++) {
-                //创建目标文件夹
-                File resultSizeFile = new File(resultFileName + "/" + sizeList[j].getName() + "/" + pictureList[i].getName());
-                if (!resultSizeFile.exists())
-                    resultSizeFile.mkdirs();
+                //如果是实景图文件夹,则创建对应的“实景图->尺寸->品牌商”文件夹
+                if (sizeList[j].getName().contains(realPicture)) {
+                    File[] realPicSizeList = sizeList[j].listFiles();
+                    for (int k = 0; k < realPicSizeList.length; k++) {
+                        //创建目标文件夹
+                        File resultFolder = new File(resultRootFolder + "/" + realPicture + "/" + realPicSizeList[k].getName() + "/" + brandList[i].getName());
+                        if (!resultFolder.exists())
+                            resultFolder.mkdirs();
+                    }
+                } else {
+                    //创建目标文件夹
+                    File resultFolder = new File(resultRootFolder + "/" + sizeList[j].getName() + "/" + brandList[i].getName());
+                    if (!resultFolder.exists())
+                        resultFolder.mkdirs();
+                }
+
             }
         }
 
         //读取品牌文件夹
-        for (int i = 0; i < pictureList.length; i++) {
+        for (int i = 0; i < brandList.length; i++) {
             //System.out.println(pictureList[i].getAbsolutePath());
-            File sizeFile = new File(pictureList[i].getAbsolutePath());
-            File[] sizeList = sizeFile.listFiles();
+            File sizeFolder = new File(brandList[i].getAbsolutePath());
+            File[] sizeList = sizeFolder.listFiles();
+            //System.out.println("size count = "+sizeList.length);
             //读取尺寸文件夹
             for (int j = 0; j < sizeList.length; j++) {
-                //进入尺寸文件夹
-                File file = new File(sizeList[i].getAbsolutePath());
-                File[] fileList = file.listFiles();
-                for (int k = 0; k < fileList.length; k++) {
-                    //复制文件
-                    File targetFile = new File(resultFileName + "/" + sizeList[j].getName() + "/" + pictureList[i].getName()+"/"+fileList[k].getName());
-                    nioTransferCopy(fileList[k],targetFile);
+
+                //如果是实景图文件夹
+                if (sizeList[j].getName().contains(realPicture)) {
+                    File[] realPicSizeList = sizeList[j].listFiles();
+                    for (int k = 0; k < realPicSizeList.length; k++) {
+                        File[] fileList = realPicSizeList[k].listFiles();
+                        for (int l = 0; l < fileList.length; l++) {
+                            File targetFile = new File(resultRootFolder + "/" + realPicture + "/" + realPicSizeList[k].getName() + "/" + brandList[i].getName() + "/" + fileList[l].getName());
+                            nioTransferCopy(fileList[l], targetFile);
+                        }
+                    }
+                } else {
+                    //进入尺寸文件夹
+                    File file = new File(sizeList[j].getAbsolutePath());
+                    File[] fileList = file.listFiles();
+                    //todo 判断是否全景图
+                    //if(){}
+                    for (int k = 0; k < fileList.length; k++) {
+                        //System.out.println("parent = "+fileList[k].getParentFile().getName());
+                        //复制文件
+                        //System.out.println("j = "+j+", source = "+fileList[k].getAbsolutePath());
+                        File targetFile = new File(resultRootFolder + "/" + sizeList[j].getName() + "/" + brandList[i].getName() + "/" + fileList[k].getName());
+                        //System.out.println("source = "+fileList[k].getAbsolutePath()+"------ targetFile = "+targetFile.getAbsolutePath());
+                        nioTransferCopy(fileList[k], targetFile);
+                    }
                 }
+
+
             }
         }
     }
@@ -71,7 +105,6 @@ public class Main {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
         }
     }
 }
